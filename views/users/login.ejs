@@ -1,0 +1,79 @@
+<style>
+    form span{
+        width:100px;
+    }
+</style>
+
+<div class="row my-5 justify-content-center">
+    <div class="col-md-6">
+        <h1 class="text-center">로그인</h1>
+        <form name="frm" class="card p-3">
+            <!--패딩, 마진 최대값 5 => 여백 많이 주고 싶으면 5-->
+            <div class="input-group mb-3">
+                <span class="input-group-text">이메일</span>
+                <input name="email" class="form-control" value="blue@test.com">
+            </div>
+            <div class="input-group mb-3">  <!--마진바탐 3칸-->
+                <span class="input-group-text">비밀번호</span>
+                <input name="password" class="form-control" type="password" value="12341234">
+            </div>
+            <button class="btn btn-primary">로그인</button>
+        </form>
+        <!--form 태그 안에 인풋 태그-->
+
+        <!--회원가입 하기-->
+        <div class="text-end pt-2">
+            <a href="/users/join">회원가입</a>
+        </div>
+
+        
+    </div>
+</div>
+
+<!--이벤트처리는 script 에서-->
+<!--name : 그냥 쓰기 / 클래스 : . / id : #-->
+<!--preventDefault : 기본 이벤트 실행하지 마세요~-->
+<!--유연성 검사 : 이메일, 비밀번호 맞는지 확인-->
+
+<!--그냥 srcipt 는 import 불가 => import 하려면 type = "module" -->
+<script type="module">
+    import { app } from "/javascripts/firebase.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+
+    const auth = getAuth(app);  // 인증객체 auth에 가져오기
+
+
+    $(frm).on("submit",function(event){
+        event.preventDefault(); 
+
+        // 유효성 체크
+        const email=$(frm.email).val();
+        const password=$(frm.password).val();
+        // == : 비교 연산자
+        if(email == ""){
+            alert("이메일을 입력하세요!");
+            $(frm.email).focus();   // 깜빡깜빡
+        } else if(password == ""){
+            alert("비밀번호를 입력하세요!");
+            $(frm.password).focus();
+        } else {
+            // 로그인 체크!
+            // alert(email + password);
+            signInWithEmailAndPassword(auth, email, password).then(success=>{
+                console.log(success);
+                alert("로그인에 성공했습니다.");
+                sessionStorage.setItem("email", email);
+                sessionStorage.setItem("uid", success.user.uid);
+                if(sessionStorage.getItem("target")){
+                    location.href=sessionStorage.getItem("target");
+                }else{
+                    location.href="/"
+                }
+
+            }).catch(error=>{
+                console.log(error);
+                alert(error.message);
+            })
+        }
+    });
+</script>

@@ -1,0 +1,154 @@
+<div class ="row my-5">
+    <div class ="col">
+        <h1 class="text-center">지역검색</h1>
+            <!-- 검색폼-->
+            <div class="row justify-content-end mb-2">
+                <form name = "frm" class = "col-6 col-md-4 col-lg-3">
+                    <div class="input-group">
+                        <input name = "query" class="form-control" value="인하대학교">
+                        <button class="btn btn-primary">검색</button>
+                    </div>
+                </form>
+            </div>
+        <!-- 도서검색 결과 출력-->
+        <div id ="div_locals"></div>
+        <!--페이지 이동 버튼-->
+        <div class="text-center">
+            <button id="prev" class="btn btn-primary">이전</button>
+            <span id="span_page" class="mx-3">1/10</span>
+            <button id="next" class="btn btn-primary">다음</button>
+        </div>
+        <!-- 지도 출력 -->
+        <div id="map" style="width:100%;height:400px;" class="my-5"></div> <!--위아래 여백 - 마진-->
+    </div>
+</div>
+
+<!-- ajax : 홈페이지 리프레쉬 X 데이터만 바껴요~-->
+
+<!--템플릿-->
+<!-- div_locals 에 넣어줄 템플릿-->
+<script type="x-handlebars-template" id="temp_locals">
+    <table class="table table-striped">
+        {{#each documents}}
+            <tr>
+                <td>{{place_name}}</td>
+                <td>{{address_name}}</td>
+                <td>{{phone}}</td>
+                <td><button class="btn btn-primary" x="{{x}}" y="{{y}}">위치보기</button></td>
+                <td><button class="btn btn-primary btn-sm favorite" local="{{toString @this}}">즐겨찾기</button></td>
+            </tr>
+        {{/each}}
+    </table>
+
+</script>
+<script>
+    Handlebars.registerHelper("toString", function(local){
+        return JSON.stringify(local); //로컬을 받아서 스트링으로 리턴
+    });
+</script>
+<script type="module"> ///시험나옴
+    import { app } from "/javascripts/firebase.js"; //public이 root
+    import { getDatabase, ref, get, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+    const db=getDatabase(app);////시험 나옴
+
+    let query = $(frm.query).val();
+    let page = 1;
+    let size = 5;
+
+    getLocals();
+
+    //즐겨찾기 버튼 클릭
+    $("#div_locals").on("click", ".favorite", async function() {
+        if(sessionStorage.getItem("email")) {            
+            const local=JSON.parse($(this).attr("local"));
+            const ref_favorite=ref(db, `favorite/${sessionStorage.getItem("uid")}/${local.id}`);
+            const snapshot = await get(ref_favorite);
+            
+            if(snapshot.val()) {
+                alert("이미 즐겨찾기에 등록되어 있습니다.");
+            } else {
+                await set(ref_favorite, local);
+                alert("등록되었습니다.");
+            }
+
+            console.log(local);
+            //console.log(snapshot.val());
+        } else {
+            sessionStorage.setItem("target", "/locals");
+            location.href="/users/login";
+        }
+    });
+
+    // 위치보기 버튼 클릭한 경우
+    $("#div_locals").on("click", "button", function(){
+        let x = $(this).attr("x");
+        let y = $(this).attr("y");
+
+        var container = document.getElementById('map');
+		var options = {
+			center: new kakao.maps.LatLng(y, x),
+			level: 3
+		};
+
+		var map = new kakao.maps.Map(container, options);
+
+        var markerPosition  = new kakao.maps.LatLng(y, x);  // 마커가 표시될 위치입니다 
+        var marker = new kakao.maps.Marker({  // 마커를 생성합니다
+            position: markerPosition
+        });
+        marker.setMap(map);  // 마커가 지도 위에 표시되도록 설정합니다
+
+    })
+
+    $(frm).on("submit",function(event){
+        event.preventDefault();
+        query = $(frm.query).val();
+        page = 1;
+        getLocals();
+
+    })
+
+    $("#prev").on("click",function(){
+        page--;
+        getLocals();
+    })
+
+    $("#next").on("click",function(){
+        page++;
+        getLocals();
+    })
+
+    function getLocals(){
+        // $.ajax({ -> 외우세요! 형식입니다!
+        // type, url, headers, data, success 작성해줘야함
+        // 검색 : 카카오 개발자센터-검색=REST API - 키워드 장소 검색하기
+        // is-end : 마지막 페이지인지
+        $.ajax({
+            type:"get",
+            url:"https://dapi.kakao.com/v2/local/search/keyword.json",
+            headers:{"Authorization":"KakaoAK 946e2e15a15fff0476418e755bb41a6f"},
+            // page : default - 1 , size : dafault - 15
+            data:{query:query, page : page, size : size},
+            success:function(data){
+                console.log(data);
+                let temp = Handlebars.compile($("#temp_locals").html());
+                let html = temp(data);
+                $("#div_locals").html(html);
+                // data -> temp -> div_books 들어감
+
+                let last = Math.ceil(data.meta.pageable_count/size);
+                $("#span_page").html(page + " / " + last);
+
+                if(page==1) $("#prev").attr("disabled", true)
+                else $("#prev").attr("disabled", false);
+
+                if(data.meta.is_end) $("#next").attr("disabled",true)
+                else $("#next").attr("disabled", false);
+
+
+            }
+
+        })
+    }
+
+</script>
