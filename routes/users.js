@@ -19,5 +19,7 @@ router.get('/join', function(req, res, next){
 
 // ejs 파일은 view 폴더에 넣기~
 
-
+router.get('/mypage',function(req,res){
+  res.render('index',{title: '마이페이지', pageName:'users/mypage.ejs'});
+})
 module.exports = router;
