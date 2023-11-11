@@ -24,7 +24,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/books', booksRouter);
-app.use('/locals',require('./routes/locals'));  // 라우터 등록할 때 locals 경로 사용 가능
+app.use('/locals',require('./routes/locals'));
+app.use('/posts',require('./routes/posts'));  // 라우터 등록할 때 locals 경로 사용 가능
 // 변수 만들고 사용해도 되고, 바로 써줘도 되고~
 
 
